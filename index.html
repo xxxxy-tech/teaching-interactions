@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>课堂交互作品三则 · 语文与数学</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --paper:#f4efe4; --ink:#221e18; --ink2:#5d564b; --line:#d9cfba; --seal:#a8321e;
+  }
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Songti SC","STSong","SimSun","Noto Serif SC",serif;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 20% 10%, #fffdf7 0%, transparent 45%),
+                     radial-gradient(circle at 85% 80%, #efe7d6 0%, transparent 50%);
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:64px 40px 80px}
+  header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:40px}
+  .kicker{font-size:12px;letter-spacing:.32em;color:var(--ink2);margin-bottom:16px}
+  h1{font-size:40px;font-weight:600;letter-spacing:.06em;line-height:1.3}
+  h1 span{color:var(--seal)}
+  .lead{margin-top:16px;color:var(--ink2);font-size:15px;line-height:2;max-width:760px}
+  .lead b{color:var(--ink);font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:24px}
+  .card{
+    display:flex;flex-direction:column;
+    background:#fbf8f0;border:1px solid var(--line);border-radius:3px;
+    padding:28px 26px 24px;text-decoration:none;color:inherit;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s;
+    box-shadow:0 1px 0 #fff inset;
+  }
+  .card:hover{transform:translateY(-4px);box-shadow:0 14px 32px -18px rgba(60,40,20,.45);border-color:#c3b69c}
+  .card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .no{font-family:Georgia,serif;font-size:13px;letter-spacing:.2em;color:#b4a88f}
+  .tag{font-size:11px;letter-spacing:.14em;border:1px solid;border-radius:2px;padding:4px 9px}
+  h2{font-size:24px;font-weight:600;letter-spacing:.04em}
+  .sub{font-size:12px;color:var(--ink2);margin-top:8px;letter-spacing:.06em}
+  .desc{margin-top:18px;font-size:14px;line-height:1.95;color:#403a31}
+  ul{margin-top:18px;padding-left:0;list-style:none}
+  li{font-size:12.5px;line-height:1.9;color:var(--ink2);padding-left:16px;position:relative}
+  li::before{content:"";position:absolute;left:0;top:.85em;width:5px;height:5px;border-radius:50%;background:#c3b69c}
+  .go{margin-top:auto;font-size:13px;letter-spacing:.1em;color:var(--seal);border-top:1px dashed var(--line);padding-top:16px}
+  .go em{font-style:normal;transition:margin-left .2s}
+  .card:hover .go em{margin-left:6px}
+  footer{margin-top:52px;border-top:1px solid var(--line);padding-top:22px;font-size:12px;color:#8d8474;line-height:2;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  @media (max-width:720px){.wrap{padding:40px 22px 60px}h1{font-size:30px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">课 堂 交 互 作 品 · 三 则</div>
+    <h1>让课文可以走进去，<br>让公式可以被<span>拉出来</span></h1>
+    <p class="lead">
+      三个网页交互作品，分别对应 <b>情境沉浸式</b>、<b>探究操作式</b>、<b>创作生成式</b> 三类课堂交互形态。
+      每个作品都是单个 HTML 文件，双击即可在浏览器中打开，无需安装、无需登录、不依赖网络资源，可直接投屏到教室大屏，也可以发给学生在平板上操作。
+    </p>
+  </header>
+
+  <div class="grid">
+      <a class="card" href="01-beiying-station/index.html">
+        <div class="card-top">
+          <span class="no">01</span>
+          <span class="tag" style="color:#b8894a;border-color:#b8894a66">情境沉浸式交互</span>
+        </div>
+        <h2>背影 · 浦口车站</h2>
+        <p class="sub">统编版语文八年级上册 第 14 课</p>
+        <p class="desc">学生以第一人称走进 1917 年冬的浦口车站，在四个可暂停、可回看的「慢镜头」里理解「攀、缩、倾、爬」四个动词的分量。</p>
+        <ul><li>在情境中读，而不是在段落里找答案</li><li>把「反复写背影」变成可感的四次目送</li><li>动词辨析与情感体认同时发生</li></ul>
+        <span class="go">打开作品 <em>→</em></span>
+      </a>
+
+      <a class="card" href="02-pythagoras-lab/index.html">
+        <div class="card-top">
+          <span class="no">02</span>
+          <span class="tag" style="color:#2a6f8e;border-color:#2a6f8e66">探究操作式交互</span>
+        </div>
+        <h2>勾股定理探究实验室</h2>
+        <p class="sub">北师大版数学八年级上册 第一章</p>
+        <p class="desc">拖动两条直角边，三个正方形的面积跟着变；记录三组以上数据自己提出猜想，再用赵爽弦图把 a² + b² = c² 拼出来。</p>
+        <ul><li>从「记住公式」到「发现关系」</li><li>数据记录 → 提出猜想 → 面积证明，走完一次数学探究</li><li>图形随参数实时变化，直观呈现「形」与「数」的对应</li></ul>
+        <span class="go">打开作品 <em>→</em></span>
+      </a>
+
+      <a class="card" href="03-imagery-studio/index.html">
+        <div class="card-top">
+          <span class="no">03</span>
+          <span class="tag" style="color:#a8321e;border-color:#a8321e66">创作生成式交互</span>
+        </div>
+        <h2>意象诗坊</h2>
+        <p class="sub">统编版语文八年级上册 第三单元后 · 古诗词创作</p>
+        <p class="desc">先挑意象，再由系统按平仄和押韵拼出一首五言绝句的毛坯；学生逐词替换，实时看到合律度的变化，最后导出一张诗笺。</p>
+        <ul><li>意象从抽象概念变成可挑选、可组合的材料</li><li>在形式约束中创作，而不是无约束地抒情</li><li>系统只给毛坯，作者始终是学生</li></ul>
+        <span class="go">打开作品 <em>→</em></span>
+      </a>
+  </div>
+
+  <footer>
+    <div>语文 · 数学 跨学科教学演示　|　适用学段：初中</div>
+    <div>建议全屏浏览（F11），板书与讲解可与作品同步进行</div>
+  </footer>
+</div>
+</body>
+</html>
