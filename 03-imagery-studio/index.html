@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>意象诗坊｜创作生成式交互</title>
+<style>
+  :root{
+    --paper:#f2ead8;
+    --paper2:#ece1cb;
+    --ink:#24201a;
+    --ink2:#4d463a;
+    --ink3:#7b7263;
+    --seal:#a8321e;
+    --jade:#3f6352;
+    --gold:#9a7d3e;
+    --line:#cdbfa2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);overflow:hidden;
+    font-family:"Kaiti SC","KaiTi","STKaiti","Songti SC",serif;
+  }
+  .shell{height:100%;display:flex;flex-direction:column;background:
+    radial-gradient(circle at 15% 10%,rgba(255,255,255,.6),transparent 50%),
+    radial-gradient(circle at 85% 90%,rgba(200,180,140,.18),transparent 55%),
+    var(--paper);}
+
+  header{
+    flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:14px 30px;
+    border-bottom:1px solid var(--line);
+  }
+  .tag{font-size:12.5px;letter-spacing:.2em;padding:4px 11px;border:1px solid var(--jade);color:var(--jade);white-space:nowrap}
+  .titles h1{font-size:27px;letter-spacing:.14em;font-weight:600}
+  .titles p{font-size:12.5px;color:var(--ink3);letter-spacing:.1em;margin-top:4px}
+  header .spacer{flex:1}
+  .btn{
+    font-family:inherit;font-size:14px;letter-spacing:.06em;cursor:pointer;
+    padding:8px 18px;border:1px solid var(--ink2);background:transparent;color:var(--ink);transition:.2s;
+  }
+  .btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.solid{background:var(--seal);color:#fff7ea;border-color:var(--seal)}
+  .btn.solid:hover{background:#8c2414;border-color:#8c2414}
+  .btn:disabled{opacity:.38;cursor:not-allowed}
+  .btn:disabled:hover{background:transparent;color:var(--ink)}
+
+  .layout{flex:1;display:flex;min-height:0}
+
+  /* 左：意象库 */
+  .left{
+    flex:0 0 268px;border-right:1px solid var(--line);padding:20px 20px 30px;
+    overflow-y:auto;background:rgba(255,252,244,.45);
+  }
+  .left h2, .right h2{
+    font-size:13px;letter-spacing:.16em;color:var(--ink2);font-weight:600;
+    padding-bottom:8px;margin-bottom:14px;border-bottom:1px solid var(--line);
+  }
+  .grp{margin-bottom:18px}
+  .grp h3{font-size:12px;letter-spacing:.1em;color:var(--ink3);margin-bottom:9px;font-weight:400}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{
+    font-family:inherit;font-size:14px;padding:5px 11px;cursor:pointer;
+    border:1px solid var(--line);background:#fdfaf2;color:var(--ink2);
+    transition:.18s;letter-spacing:.05em;
+  }
+  .chip:hover{border-color:var(--jade);color:var(--jade)}
+  .chip.on{background:var(--jade);border-color:var(--jade);color:#f6f1e2}
+  .pick-note{font-size:12px;color:var(--ink3);line-height:1.7;margin:14px 0 10px}
+  .genbtn{width:100%;padding:11px;font-size:15px;letter-spacing:.22em}
+
+  /* 中：诗稿 */
+  .center{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px 30px;position:relative}
+  .sheet{
+    width:100%;max-width:640px;background:#fbf7ea;border:1px solid var(--line);
+    box-shadow:0 10px 34px rgba(90,70,40,.10);padding:38px 40px 30px;position:relative;
+  }
+  .sheet::before{
+    content:"";position:absolute;inset:9px;border:1px solid rgba(205,191,162,.55);pointer-events:none;
+  }
+  .sheet-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;padding:0 4px}
+  .sheet-head .kind{font-size:12px;letter-spacing:.3em;color:var(--ink3)}
+  .poem{margin-top:26px}
+  .pline{
+    display:flex;align-items:flex-start;justify-content:center;gap:26px;
+    padding:11px 0;position:relative;
+  }
+  .pline+.pline::before{content:"";position:absolute;top:0;left:8%;right:8%;border-top:1px dashed rgba(205,191,162,.7)}
+  .block{display:flex;gap:3px;cursor:pointer;padding:4px 2px;border-radius:3px;transition:.2s;position:relative}
+  .block:hover{background:rgba(63,99,82,.09)}
+  .block.sel{background:rgba(168,50,30,.10);box-shadow:inset 0 0 0 1px rgba(168,50,30,.35)}
+  .cell{display:flex;flex-direction:column;align-items:center;width:40px}
+  .cell .zi{font-size:31px;line-height:1.15;letter-spacing:0;transition:color .3s}
+  .cell .tone{font-size:10px;line-height:1;color:var(--ink3);margin-top:2px;letter-spacing:0}
+  .cell .tone.p{color:var(--jade)}
+  .cell .tone.z{color:var(--seal)}
+  .cell.rhyme .zi{color:var(--seal)}
+  .empty .cell .zi{color:#c3b79e}
+  .ghost{
+    text-align:center;padding:64px 0;font-size:15px;letter-spacing:.4em;
+    color:#c6b99e;
+  }
+  .hint{font-size:12.5px;color:var(--ink3);text-align:center;line-height:1.8;margin-top:22px}
+  .hint b{color:var(--seal);font-weight:400}
+
+  .replace{
+    width:100%;max-width:640px;margin-top:16px;min-height:52px;
+    border:1px dashed rgba(205,191,162,.9);background:rgba(255,252,244,.6);
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 14px;
+  }
+  .replace .lbl{font-size:12.5px;color:var(--ink3);letter-spacing:.08em;margin-right:4px}
+  .replace .idle{font-size:12.5px;color:#b3a88f}
+  .rchip{
+    font-family:inherit;font-size:15px;padding:4px 12px;cursor:pointer;letter-spacing:.08em;
+    border:1px solid var(--line);background:#fdfaf2;color:var(--ink2);transition:.18s;
+  }
+  .rchip:hover{background:var(--jade);color:#f6f1e2;border-color:var(--jade)}
+  .rchip.act{background:#fff;border-color:var(--seal);color:var(--seal)}
+
+  /* 右：格律 */
+  .right{flex:0 0 306px;border-left:1px solid var(--line);padding:20px 20px 30px;overflow-y:auto;background:rgba(255,252,244,.45)}
+  .mcard{border:1px solid var(--line);background:#fdfaf2;padding:13px 14px;margin-bottom:14px}
+  .mcard .k{font-size:12px;color:var(--ink3);letter-spacing:.08em;margin-bottom:8px}
+  .mcard .v{font-size:15px;color:var(--ink);line-height:1.7}
+  .pat{display:flex;gap:6px;justify-content:center;margin:4px 0}
+  .pat span{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;border:1px solid var(--line)}
+  .pat .p{color:var(--jade)}
+  .pat .z{color:var(--seal)}
+  .pat .bad{background:rgba(168,50,30,.12);border-color:rgba(168,50,30,.4)}
+  .score{display:flex;align-items:baseline;gap:8px;margin-top:10px}
+  .score .num{font-size:30px;color:var(--gold);font-family:Georgia,serif}
+  .score .unit{font-size:12px;color:var(--ink3)}
+  .bar{height:4px;background:#e4dac2;margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--gold);width:0;transition:width .5s}
+  .ok{color:var(--jade)}
+  .no{color:var(--seal)}
+  .field{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .field label{font-size:12.5px;color:var(--ink3);width:38px;letter-spacing:.08em}
+  .field input{
+    flex:1;font-family:inherit;font-size:14.5px;padding:6px 9px;border:1px solid var(--line);
+    background:#fffdf7;color:var(--ink);letter-spacing:.06em;outline:none;
+  }
+  .field input:focus{border-color:var(--jade)}
+  .exportbar{display:flex;gap:8px;margin-top:14px}
+  .exportbar .btn{flex:1;padding:9px;font-size:13px;letter-spacing:.1em}
+
+  /* 抽屉 */
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(536px,92vw);z-index:70;background:#fbf7ea;
+    border-left:1px solid var(--line);transform:translateX(100%);
+    transition:transform .45s cubic-bezier(.5,0,.2,1);display:flex;flex-direction:column;
+    box-shadow:-24px 0 60px rgba(70,55,30,.16);
+  }
+  .drawer.open{transform:none}
+  .drawer header{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .drawer header h3{font-size:21px;font-weight:600;letter-spacing:.14em}
+  .drawer .close{background:none;border:none;font-size:25px;cursor:pointer;color:var(--ink2);line-height:1;font-family:serif}
+  .drawer .content{padding:24px 26px 40px;overflow-y:auto;font-size:14px;line-height:1.95;color:#3b352b}
+  .drawer h4{font-size:14px;letter-spacing:.1em;margin:20px 0 7px;color:var(--ink)}
+  .drawer h4:first-child{margin-top:0}
+  .drawer ul{padding-left:19px}
+  .drawer li{margin-bottom:5px}
+  .drawer .note{border-left:2px solid var(--gold);padding-left:13px;color:#6b6152;margin-top:10px}
+  .backdrop{position:fixed;inset:0;background:rgba(40,30,15,.38);z-index:65;opacity:0;visibility:hidden;transition:.35s}
+  .backdrop.show{opacity:1;visibility:visible}
+
+  .toast{
+    position:fixed;left:50%;bottom:36px;transform:translate(-50%,16px);z-index:90;
+    background:var(--ink);color:#f6efdf;font-size:13.5px;padding:10px 20px;letter-spacing:.08em;
+    opacity:0;transition:.35s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:1200px){
+    .layout{flex-direction:column;overflow-y:auto}
+    .left,.right{flex:0 0 auto;width:100%;border:none;border-bottom:1px solid var(--line)}
+    .center{padding:16px}
+    .sheet{padding:24px 18px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <span class="tag">创作生成式交互</span>
+    <div class="titles">
+      <h1>意象诗坊</h1>
+      <p>五言绝句　·　选意象、填格律、改出你自己的诗</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnTeach">教学说明</button>
+  </header>
+
+  <main class="layout">
+    <aside class="left">
+      <h2>一 · 挑选意象</h2>
+      <div id="imgLib"></div>
+      <p class="pick-note" id="pickNote">已选 0 个。选 3 个以上，系统才能组出一首不重复的诗。</p>
+      <button class="btn solid genbtn" id="btnGen" disabled>生 成 初 稿</button>
+    </aside>
+
+    <section class="center">
+      <div class="sheet">
+        <div class="sheet-head">
+          <span class="kind" id="kindLabel">五 言 绝 句</span>
+          <span class="kind" id="rhymeLabel">韵：—</span>
+        </div>
+        <div class="poem" id="poem"></div>
+        <p class="hint" id="hint">先在左边挑选意象，再由系统按格律<b>生成一稿</b>；<br>然后点任意词块，把它换成你自己的说法。</p>
+      </div>
+      <div class="replace" id="replace">
+        <span class="idle">点击诗中的一个词块，这里会列出可以替换的词。</span>
+      </div>
+    </section>
+
+    <aside class="right">
+      <h2>三 · 格律参考</h2>
+
+      <div class="mcard">
+        <div class="k">押韵（一、二、四句末字）</div>
+        <div class="v" id="rhymeState">—</div>
+      </div>
+
+      <div class="mcard">
+        <div class="k">平仄对照</div>
+        <div style="font-size:11.5px;color:#a99c85;margin-bottom:8px;letter-spacing:.05em">高标准式：平平仄仄平 / 仄仄仄平平 / 仄仄平平仄 / 平平仄仄平</div>
+        <div id="patBox"></div>
+      </div>
+
+      <div class="mcard">
+        <div class="k">合律度</div>
+        <div class="score"><span class="num" id="scoreNum">0</span><span class="unit">／ 20 字</span></div>
+        <div class="bar"><i id="scoreBar"></i></div>
+        <div class="v" style="font-size:12.5px;color:var(--ink3);margin-top:9px;line-height:1.7" id="scoreTip">
+          点词块替换，红点（仄）与绿点（平）越接近标准式，分数越高。不必满分——格律是工具，不是镣铐。
+        </div>
+      </div>
+
+      <div class="mcard">
+        <div class="k">诗笺落款</div>
+        <div class="field"><label>题名</label><input id="inTitle" maxlength="8" placeholder="如：寒江夜泊"></div>
+        <div class="field"><label>落款</label><input id="inSign" maxlength="10" placeholder="如：初二（3）班 某"></div>
+        <div class="exportbar">
+          <button class="btn" id="btnCopy">复制诗句</button>
+          <button class="btn" id="btnSave">保存诗笺</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer">
+  <header><h3>教学说明</h3><button class="close" id="btnClose">×</button></header>
+  <div class="content">
+    <h4>适用对象</h4>
+    <p>统编版语文八年级上册第三单元「唐诗五首」后，或任何古诗单元写作课。用于<b>创作</b>环节，不是背诵与默写。</p>
+
+    <h4>教学目的</h4>
+    <ul>
+      <li><b>把「意象」变成可操作的东西：</b>学生先选意象，再看系统用这些意象组出什么句子，直观体会「意象决定意境」。</li>
+      <li><b>在形式约束中创作：</b>五言、四句、押韵、平仄对照——约束不是限制，而是让学生把注意力放在「选哪个字更准」上。</li>
+      <li><b>从模仿走向修改：</b>系统给的是毛坯，不是成品。学生必须替换词块、调整平仄、补题落款，才有一首属于自己的诗。</li>
+      <li><b>理解格律的评价尺度：</b>合律度只作为参考，允许「不以辞害意」——古人也有拗句。</li>
+    </ul>
+
+    <h4>课堂用法（约 25 分钟）</h4>
+    <ul>
+      <li>导入：出示两组意象（如「明月·孤舟」与「残荷·断桥」），问学生脑中浮现的画面有何不同。</li>
+      <li>操作：每人选三个意象，生成初稿，读一遍，圈出最不像自己意思的那一处。</li>
+      <li>修改：只允许改三个词块，看合律度与意境如何互相让步。</li>
+      <li>展示：保存诗笺，投屏朗读，同学说「哪个字换得最好」。</li>
+    </ul>
+
+    <h4>设计说明</h4>
+    <p class="note">生成式工具最容易变成「一键代写」。这里刻意把系统限制在「毛坯」：它只按模板把学生选的意象拼成合字数、押韵的四句，既不押韵也不合律的地方留白给学生去改。作者始终是学生。</p>
+    <p class="note">平仄按普通话四声简化标注（一二声为平，三四声为仄），未区分入声，与《平水韵》会有出入；课堂上应说明这是<b>示意</b>而非考据。</p>
+    <p class="note">导出为 SVG 诗笺，可直接插入 Word 或打印。</p>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- 词库 ---------------- */
+  var LIB = [
+    { g:'天象', words:['明月','落日','疏雨','晚钟','霜阶','微凉'] },
+    { g:'山水', words:['寒江','空山','远岫','古寺','断桥','野渡'] },
+    { g:'草木', words:['残荷','松风','竹影','秋水','归鸟','柴门'] },
+    { g:'人事', words:['孤舟','送客','系缆','问渡','掩门','过桥'] }
+  ];
+  var ALLIMG = [];
+  LIB.forEach(function(g){ g.words.forEach(function(w){ if(ALLIMG.indexOf(w)<0) ALLIMG.push(w); }); });
+
+  var STATE = ['照我','初歇','无声','渐远','半掩','独立','又起','落尽','犹存','微凉'];
+  var ACT   = ['送客','系缆','惊梦','掩门','过桥','随波','问渡','入林','独归','未还'];
+  var RHYME = ['间','前','边','天','烟','山','川','寒'];
+  var RHYME_WIDE = ['间','前','边','天'];
+  var TAIL  = ['远','晚','静','冷','暮','尽'];
+
+  // 平(P)/仄(Z)：按普通话四声简化，一二声为平，三四声为仄
+  var TONE = {
+    '明':'P','月':'Z','落':'Z','日':'Z','疏':'P','雨':'Z','晚':'Z','钟':'P','霜':'P','阶':'P','微':'P','凉':'P',
+    '寒':'P','江':'P','空':'P','山':'P','远':'Z','岫':'Z','古':'Z','寺':'Z','断':'Z','桥':'P','野':'Z','渡':'Z',
+    '残':'P','荷':'P','松':'P','风':'P','竹':'P','影':'Z','秋':'P','水':'Z','归':'P','鸟':'Z','柴':'P','门':'P',
+    '孤':'P','舟':'P','送':'Z','客':'Z','系':'Z','缆':'Z','问':'Z','掩':'Z','过':'Z','照':'Z','我':'Z','初':'P',
+    '歇':'P','无':'P','声':'P','渐':'Z','半':'Z','独':'P','立':'Z','又':'Z','起':'Z','尽':'Z','犹':'P','存':'P',
+    '惊':'P','梦':'Z','随':'P','波':'P','入':'Z','林':'P','未':'Z','还':'P','间':'P','船':'P','眠':'P','烟':'P','前':'P','边':'P','天':'P',
+    '川':'P','静':'Z','冷':'Z','暮':'Z'
+  };
+
+  // 五绝标准式（平起首句入韵：一、二、四句押韵）
+  var STD = [
+    ['P','P','Z','Z','P'],
+    ['Z','Z','Z','P','P'],
+    ['Z','Z','P','P','Z'],
+    ['P','P','Z','Z','P']
+  ];
+
+  var picked = [];
+  var lines = [];          // 每行：[意象, 第二块, 尾字]
+  var sel = null;          // {line:0..3, part:0..2}
+
+  /* ---------------- DOM ---------------- */
+  var imgLib = document.getElementById('imgLib');
+  var pickNote = document.getElementById('pickNote');
+  var btnGen = document.getElementById('btnGen');
+  var poem = document.getElementById('poem');
+  var replace = document.getElementById('replace');
+  var hint = document.getElementById('hint');
+  var patBox = document.getElementById('patBox');
+  var scoreNum = document.getElementById('scoreNum');
+  var scoreBar = document.getElementById('scoreBar');
+  var rhymeState = document.getElementById('rhymeState');
+  var rhymeLabel = document.getElementById('rhymeLabel');
+  var kindLabel = document.getElementById('kindLabel');
+
+  /* ---------------- 意象库 ---------------- */
+  LIB.forEach(function(g){
+    var wrap = document.createElement('div');
+    wrap.className = 'grp';
+    var h = document.createElement('h3');
+    h.textContent = g.g;
+    wrap.appendChild(h);
+    var chips = document.createElement('div');
+    chips.className = 'chips';
+    g.words.forEach(function(w){
+      var b = document.createElement('button');
+      b.className = 'chip';
+      b.textContent = w;
+      b.addEventListener('click', function(){
+        var i = picked.indexOf(w);
+        if(i >= 0){ picked.splice(i,1); b.classList.remove('on'); }
+        else{
+          if(picked.length >= 6){ toast('最多选 6 个意象'); return; }
+          picked.push(w); b.classList.add('on');
+        }
+        refreshPick();
+      });
+      chips.appendChild(b);
+    });
+    wrap.appendChild(chips);
+    imgLib.appendChild(wrap);
+  });
+
+  function refreshPick(){
+    pickNote.textContent = '已选 ' + picked.length + ' 个。' +
+      (picked.length >= 3 ? '够了，可以生成。' : '再选 ' + (3 - picked.length) + ' 个。');
+    btnGen.disabled = picked.length < 3;
+  }
+
+  /* ---------------- 生成 ---------------- */
+  function shuffle(a){
+    a = a.slice();
+    for(var i=a.length-1;i>0;i--){ var j = Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+
+  function pickSeq(pool, n){
+    var out = [];
+    for(var i=0;i<n;i++){
+      var cands = pool.filter(function(w){ return out.length === 0 || w !== out[out.length-1]; });
+      if(!cands.length) cands = pool;
+      out.push(cands[Math.floor(Math.random()*cands.length)]);
+    }
+    return out;
+  }
+
+  function generate(){
+    // 意象太少会通篇重复，补足到 6 个（学生之后可以逐个换掉）
+    var pool = picked.slice();
+    var extra = shuffle(ALLIMG.filter(function(w){ return pool.indexOf(w) < 0; }));
+    var added = 0;
+    while(pool.length < 6 && extra.length){ pool.push(extra.shift()); added++; }
+
+    var used = [];
+    // 按标准式逐格挑首字平仄相符的意象，让初稿尽量接近格律
+    function take(tone, prev){
+      var base = pool.filter(function(w){ return used.indexOf(w) < 0; });
+      if(!base.length) base = pool.slice();
+      var c = base.filter(function(w){ return TONE[w.charAt(0)] === tone && w !== prev; });
+      if(!c.length) c = base.filter(function(w){ return w !== prev; });
+      if(!c.length) c = base;
+      var w = c[Math.floor(Math.random()*c.length)];
+      used.push(w);
+      return w;
+    }
+    function rhyme(){
+      var list = (Math.random() < 0.7) ? RHYME_WIDE : RHYME;
+      return list[Math.floor(Math.random()*list.length)];
+    }
+    function tail(){ return TAIL[Math.floor(Math.random()*TAIL.length)]; }
+
+    var l1a = take('P',''), l1b = take('Z', l1a);
+    var l2a = take('Z',''), l2b = take('Z', l2a);
+    var l3a = take('Z',''), l3b = take('P', l3a);
+    var l4a = take('P',''), l4b = take('Z', l4a);
+    lines = [
+      [l1a, l1b, rhyme()],
+      [l2a, l2b, rhyme()],
+      [l3a, l3b, tail()],
+      [l4a, l4b, rhyme()]
+    ];
+    sel = null;
+    render();
+    renderReplace();
+    hint.innerHTML = '这是系统按你的意象并置成的<b>初稿</b>' + (added ? '（为免通篇重复，系统另补了 ' + added + ' 个意象）' : '') +
+      '。意象是现成的，意境是不是你要的，得你自己判断。<br>点任意词块，换成更合适的那一个。';
+    document.getElementById('inTitle').value = guessTitle();
+    document.getElementById('kindLabel').textContent = '五 言 绝 句';
+  }
+
+  function guessTitle(){
+    return lines[0][0] || '无题';
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function toneOf(ch){ return TONE[ch] || 'P'; }
+
+  function render(){
+    poem.innerHTML = '';
+    if(!lines.length){
+      poem.innerHTML = '<div class="ghost">四 句 五 言　·　待 你 生 成</div>';
+      updateMetrics([]);
+      return;
+    }
+
+    lines.forEach(function(row, li){
+      var ln = document.createElement('div');
+      ln.className = 'pline';
+      var parts = [row[0], row[1], row[2]];
+      var widths = [2,2,1];
+      parts.forEach(function(txt, pi){
+        var blk = document.createElement('div');
+        blk.className = 'block' + (sel && sel.line===li && sel.part===pi ? ' sel' : '');
+        for(var ci=0;ci<widths[pi];ci++){
+          var ch = txt.charAt(ci);
+          var cell = document.createElement('div');
+          cell.className = 'cell' + (li!==2 && pi===2 ? ' rhyme' : '');
+          var tc = toneOf(ch);
+          cell.innerHTML = '<div class="zi">' + ch + '</div>' +
+            '<div class="tone ' + (tc==='P'?'p':'z') + '">' + (tc==='P'?'○':'●') + '</div>';
+          blk.appendChild(cell);
+        }
+        blk.addEventListener('click', function(){
+          sel = { line: li, part: pi };
+          render(); renderReplace();
+        });
+        ln.appendChild(blk);
+      });
+      poem.appendChild(ln);
+    });
+    updateMetrics(lines);
+  }
+
+  function renderReplace(){
+    if(!lines.length){
+      replace.innerHTML = '<span class="idle">点击诗中的一个词块，这里会列出可以替换的词。</span>';
+      return;
+    }
+    if(!sel){
+      replace.innerHTML = '<span class="idle">点击诗中的一个词块，这里会列出可以替换的词。</span>';
+      return;
+    }
+    var pool, cur;
+    if(sel.part === 0){ pool = ALLIMG; cur = lines[sel.line][0]; }
+    else if(sel.part === 1){ pool = ALLIMG; cur = lines[sel.line][1]; }
+    else { pool = (sel.line === 2) ? TAIL : RHYME; cur = lines[sel.line][2]; }
+
+    replace.innerHTML = '<span class="lbl">换作：</span>';
+    pool.forEach(function(w){
+      var b = document.createElement('button');
+      b.className = 'rchip' + (w === cur ? ' act' : '');
+      b.textContent = w;
+      b.addEventListener('click', function(){
+        lines[sel.line][sel.part] = w;
+        render(); renderReplace();
+      });
+      replace.appendChild(b);
+    });
+  }
+
+  /* ---------------- 格律统计 ---------------- */
+  function flat(){
+    var out = [];
+    lines.forEach(function(row){
+      var s = row[0] + row[1] + row[2];
+      for(var i=0;i<s.length;i++) out.push(s.charAt(i));
+    });
+    return out;
+  }
+
+  function updateMetrics(rows){
+    if(!rows.length){
+      patBox.innerHTML = '<div style="font-size:12.5px;color:#b3a88f">生成后显示</div>';
+      scoreNum.textContent = '0'; scoreBar.style.width = '0%';
+      rhymeState.textContent = '—'; rhymeLabel.textContent = '韵：—';
+      return;
+    }
+
+    // 平仄对照
+    var html = '';
+    rows.forEach(function(row, li){
+      var s = row[0] + row[1] + row[2];
+      html += '<div class="pat">';
+      for(var i=0;i<5;i++){
+        var tc = toneOf(s.charAt(i));
+        var bad = (tc !== STD[li][i]) ? ' bad' : '';
+        html += '<span class="' + (tc==='P'?'p':'z') + bad + '">' + (tc==='P'?'平':'仄') + '</span>';
+      }
+      html += '</div>';
+    });
+    patBox.innerHTML = html;
+
+    // 合律度
+    var flatChars = flat(), hit = 0;
+    for(var i=0;i<flatChars.length;i++){
+      if(toneOf(flatChars[i]) === STD[Math.floor(i/5)][i%5]) hit++;
+    }
+    scoreNum.textContent = hit;
+    scoreBar.style.width = (hit / 20 * 100) + '%';
+
+    // 押韵：一、二、四句末字
+    var e1 = rows[0][2], e2 = rows[1][2], e4 = rows[3][2];
+    var g1 = RHYME.indexOf(e1) >= 0, g2 = RHYME.indexOf(e2) >= 0, g4 = RHYME.indexOf(e4) >= 0;
+    if(g1 && g2 && g4){
+      rhymeState.innerHTML = '<span class="ok">合韵</span>　' + e1 + ' / ' + e2 + ' / ' + e4 + '　同属「an」韵';
+      rhymeLabel.textContent = '韵：' + e1;
+    } else {
+      rhymeState.innerHTML = '<span class="no">尚未合韵</span>　' + e1 + ' / ' + e2 + ' / ' + e4;
+      rhymeLabel.textContent = '韵：未合';
+    }
+
+    var tip = document.getElementById('scoreTip');
+    if(hit >= 16) tip.innerHTML = '已经很接近标准式了。此时若为了一个字牺牲意思，就该停下来想想值不值。';
+    else if(hit >= 11) tip.innerHTML = '骨架已经在了。挑红点最多的一句，换一个词块试试。';
+    else tip.innerHTML = '先把一、二、四句的末字换成押韵的，再顾平仄。';
+  }
+
+  /* ---------------- 交互 ---------------- */
+  btnGen.addEventListener('click', generate);
+
+  document.getElementById('btnCopy').addEventListener('click', function(){
+    if(!lines.length){ toast('先点「生成初稿」'); return; }
+    var txt = (document.getElementById('inTitle').value || '无题') + '\n' +
+      lines.map(function(r){ return r[0] + r[1] + r[2]; }).join('\n') +
+      '\n' + (document.getElementById('inSign').value || '');
+    copyText(txt);
+  });
+
+  function copyText(t){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ toast('诗句已复制'); },
+        function(){ fallbackCopy(t); });
+    } else fallbackCopy(t);
+  }
+  function fallbackCopy(t){
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('诗句已复制'); }catch(e){ toast('复制失败，请手动选择'); }
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById('btnSave').addEventListener('click', function(){
+    if(!lines.length){ toast('先点「生成初稿」'); return; }
+    var svg = buildSheetSvg();
+    var blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var t = document.getElementById('inTitle').value || '无题';
+    a.href = url; a.download = '诗笺-' + t + '.svg';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    toast('诗笺已保存（可用浏览器或 Word 打开）');
+  });
+
+  /* ---------------- 诗笺 SVG ---------------- */
+  function buildSheetSvg(){
+    var W = 620, H = 860;
+    var title = document.getElementById('inTitle').value || '无题';
+    var sign = document.getElementById('inSign').value || '';
+    var rows = lines.map(function(r){ return r[0] + r[1] + r[2]; });
+
+    var s = '';
+    s += '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">';
+    s += '<rect width="' + W + '" height="' + H + '" fill="#f7f1e0"/>';
+    s += '<rect x="26" y="26" width="' + (W-52) + '" height="' + (H-52) + '" fill="none" stroke="#c9b995" stroke-width="1.2"/>';
+    s += '<rect x="36" y="36" width="' + (W-72) + '" height="' + (H-72) + '" fill="none" stroke="#ded0b3" stroke-width=".7"/>';
+
+    // 题名（右上，竖排）
+    var tx = W - 96, ty = 96;
+    for(var i=0;i<title.length;i++){
+      s += '<text x="' + tx + '" y="' + (ty + i*40) + '" font-size="30" fill="#24201a" font-family="KaiTi,Kai SC,STKaiti,serif" text-anchor="middle">' + esc(title.charAt(i)) + '</text>';
+    }
+
+    // 诗句：四列，从右往左
+    var startX = W - 170;
+    rows.forEach(function(r, li){
+      var x = startX - li * 92;
+      for(var i=0;i<r.length;i++){
+        s += '<text x="' + x + '" y="' + (170 + i*54) + '" font-size="40" fill="#24201a" font-family="KaiTi,Kai SC,STKaiti,serif" text-anchor="middle">' + esc(r.charAt(i)) + '</text>';
+      }
+    });
+
+    // 落款（左下，竖排小字）
+    if(sign){
+      var sx = 96;
+      for(var j=0;j<sign.length;j++){
+        s += '<text x="' + sx + '" y="' + (H - 150 - (sign.length-1-j)*26) + '" font-size="19" fill="#4d463a" font-family="KaiTi,Kai SC,STKaiti,serif" text-anchor="middle">' + esc(sign.charAt(j)) + '</text>';
+      }
+    }
+
+    // 印章
+    s += '<rect x="' + (W-136) + '" y="' + (H-152) + '" width="58" height="58" rx="4" fill="#a8321e" opacity=".88"/>';
+    s += '<text x="' + (W-107) + '" y="' + (H-127) + '" font-size="17" fill="#fbf6e8" font-family="KaiTi,Kai SC,serif" text-anchor="middle">意象</text>';
+    s += '<text x="' + (W-107) + '" y="' + (H-104) + '" font-size="17" fill="#fbf6e8" font-family="KaiTi,Kai SC,serif" text-anchor="middle">诗坊</text>';
+
+    s += '<text x="60" y="' + (H-56) + '" font-size="13" fill="#9a8f76" font-family="KaiTi,Kai SC,serif">意象诗坊 · 五言绝句创作</text>';
+    s += '</svg>';
+    return s;
+  }
+  function esc(c){
+    return c.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ---------------- 抽屉 / toast ---------------- */
+  var drawer = document.getElementById('drawer');
+  var backdrop = document.getElementById('backdrop');
+  document.getElementById('btnTeach').addEventListener('click', function(){ drawer.classList.add('open'); backdrop.classList.add('show'); });
+  function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('show'); }
+  document.getElementById('btnClose').addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+  var toastEl = document.getElementById('toast'), toastTimer = null;
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 1900);
+  }
+
+  /* ---------------- 初始化 ---------------- */
+  refreshPick();
+  render();
+  renderReplace();
+})();
+</script>
+</body>
+</html>
