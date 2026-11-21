@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>勾股定理探究实验室｜探究操作式交互</title>
+<style>
+  :root{
+    --paper:#f3eee2;
+    --paper2:#e8e0cf;
+    --grid:#d5cab4;
+    --ink:#1d242a;
+    --ink2:#41505a;
+    --blue:#2a6f8e;
+    --green:#3c7a55;
+    --red:#b34a1d;
+    --gold:#a97f1f;
+    --line:#c9bfa9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    overflow:hidden;
+  }
+  .shell{height:100%;display:flex;flex-direction:column}
+
+  header{
+    flex:0 0 auto;display:flex;align-items:center;gap:20px;padding:14px 28px;
+    background:var(--paper);border-bottom:1px solid var(--line);
+  }
+  .tag{
+    font-size:12.5px;letter-spacing:.2em;padding:4px 11px;
+    border:1px solid var(--blue);color:var(--blue);white-space:nowrap;
+  }
+  .titles h1{
+    font-family:"Songti SC","SimSun",serif;font-size:27px;letter-spacing:.08em;font-weight:600;
+  }
+  .titles p{font-size:12.5px;color:var(--ink2);letter-spacing:.1em;margin-top:4px}
+  header .spacer{flex:1}
+  .btn{
+    font-family:inherit;font-size:13.5px;letter-spacing:.05em;cursor:pointer;
+    padding:8px 16px;border:1px solid var(--ink2);background:transparent;color:var(--ink);
+    transition:.2s;
+  }
+  .btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.solid:hover{background:#000}
+  .btn.mini{padding:5px 11px;font-size:12px}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn:disabled:hover{background:transparent;color:var(--ink)}
+
+  .layout{flex:1;display:flex;min-height:0}
+
+  /* 画布 */
+  .board{
+    position:relative;flex:1 1 auto;min-width:0;
+    background:
+      radial-gradient(circle at 22% 18%,rgba(255,255,255,.75),transparent 55%),
+      var(--paper);
+    display:flex;align-items:center;justify-content:center;padding:10px;
+  }
+  .board svg{width:100%;height:100%;display:block}
+  .readout{
+    position:absolute;top:16px;left:22px;display:flex;gap:22px;align-items:baseline;
+    font-size:13px;color:var(--ink2);letter-spacing:.04em;
+    background:rgba(243,238,226,.9);padding:7px 14px;border:1px solid rgba(201,191,169,.7);
+  }
+  .readout b{font-size:19px;color:var(--ink);font-weight:600;margin-left:5px;font-variant-numeric:tabular-nums}
+  .readout .eq{font-size:17px;color:var(--red);font-family:"Cambria Math",Georgia,serif}
+  .axis-tip{position:absolute;right:22px;bottom:14px;font-size:12px;color:#8c8271;letter-spacing:.06em}
+
+  /* 面板 */
+  .panel{
+    flex:0 0 392px;border-left:1px solid var(--line);background:#faf7ee;
+    display:flex;flex-direction:column;min-height:0;
+  }
+  .panel-scroll{flex:1;overflow-y:auto;padding:20px 22px 30px}
+  .panel-scroll::-webkit-scrollbar{width:8px}
+  .panel-scroll::-webkit-scrollbar-thumb{background:#d3c9b4;border-radius:4px}
+
+  .sec{margin-bottom:26px}
+  .sec h2{
+    font-size:13px;letter-spacing:.16em;color:var(--ink2);font-weight:600;
+    padding-bottom:8px;margin-bottom:14px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .sec h2 .idx{font-family:Georgia,serif;color:var(--blue);letter-spacing:0}
+
+  .slider-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .slider-row label{width:26px;font-family:Georgia,serif;font-size:17px;font-style:italic;color:var(--ink)}
+  .slider-row input[type=range]{
+    flex:1;-webkit-appearance:none;height:3px;background:var(--line);outline:none;border-radius:2px;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+    background:var(--paper);border:2px solid var(--ink);cursor:pointer;transition:.15s;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb:hover{background:var(--ink);border-color:var(--ink)}
+  .slider-row output{width:44px;text-align:right;font-size:16px;font-variant-numeric:tabular-nums;color:var(--ink)}
+
+  .values{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;margin-top:4px}
+  .val{
+    border:1px solid var(--line);background:#fff;padding:8px 10px;
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .val span{font-size:12px;color:var(--ink2);letter-spacing:.04em}
+  .val b{font-size:16px;font-variant-numeric:tabular-nums;font-weight:600}
+  .val.a b{color:var(--blue)} .val.b b{color:var(--green)} .val.c b{color:var(--red)}
+  .val.sum{grid-column:1 / -1;background:#fdf6e6;border-color:#dfc98d}
+  .val.sum b{color:var(--gold);font-size:18px}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 4px;text-align:center;border-bottom:1px solid #e6dfcd}
+  th{color:var(--ink2);font-weight:500;font-size:11.5px;letter-spacing:.06em}
+  td.mono{font-family:Consolas,monospace}
+  tr.new td{animation:flash 1.2s ease}
+  @keyframes flash{0%{background:#f7e7b8}100%{background:transparent}}
+  .empty{color:#a79d8b;font-size:12.5px;text-align:center;padding:14px 0}
+
+  .hypo{background:#fff;border:1px solid var(--line);padding:14px}
+  .hypo p.q{font-size:13.5px;line-height:1.7;margin-bottom:12px;color:var(--ink)}
+  .hypo .opts{display:flex;flex-direction:column;gap:8px}
+  .opt{
+    text-align:left;padding:10px 12px;border:1px solid var(--line);background:#fdfaf2;
+    font-family:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;transition:.18s;line-height:1.5;
+  }
+  .opt:hover{border-color:var(--ink);background:#f7f2e4}
+  .opt.right{border-color:var(--green);background:#eaf3ec;color:#255b38}
+  .opt.wrong{border-color:var(--red);background:#f8ece5;color:#8c3512}
+  .opt:disabled{cursor:default}
+  .locked{opacity:.45;filter:grayscale(.4);pointer-events:none}
+  .lockmsg{font-size:12px;color:#a2937c;margin-top:10px;line-height:1.6}
+  .fb{font-size:12.5px;line-height:1.75;margin-top:11px;color:var(--ink2);display:none;border-left:2px solid var(--gold);padding-left:10px}
+  .fb.show{display:block;animation:fade .35s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  /* 证明 */
+  .proof{display:none}
+  .proof.show{display:block;animation:fade .45s ease both}
+  .proof svg{width:100%;height:auto;background:#fff;border:1px solid var(--line);margin-bottom:14px}
+  .steps{counter-reset:s;font-size:13px;line-height:1.85;color:var(--ink2)}
+  .step{
+    position:relative;padding:9px 12px 9px 38px;border-bottom:1px dashed #e2dac7;
+    opacity:.32;transition:.4s;
+  }
+  .step::before{
+    counter-increment:s;content:counter(s);position:absolute;left:8px;top:9px;
+    width:20px;height:20px;border-radius:50%;border:1px solid var(--line);
+    font-size:11px;display:flex;align-items:center;justify-content:center;color:var(--ink2);
+  }
+  .step.on{opacity:1;background:#fbf6e7}
+  .step.on::before{background:var(--gold);color:#fff;border-color:var(--gold)}
+  .step b{color:var(--ink)}
+  .formula{
+    font-family:"Cambria Math",Georgia,serif;font-size:16px;color:var(--ink);
+    text-align:center;padding:12px;background:#fdf6e6;border:1px solid #e5d5a8;margin-top:12px;letter-spacing:.02em;
+  }
+  .formula em{color:var(--red);font-style:normal}
+
+  /* 抽屉 */
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(540px,92vw);z-index:70;background:#fbf8ef;
+    border-left:1px solid var(--line);transform:translateX(100%);
+    transition:transform .45s cubic-bezier(.5,0,.2,1);display:flex;flex-direction:column;
+    box-shadow:-24px 0 60px rgba(40,30,10,.16);
+  }
+  .drawer.open{transform:none}
+  .drawer header{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .drawer header h3{font-family:"Songti SC",serif;font-size:21px;font-weight:600;letter-spacing:.08em}
+  .drawer .close{background:none;border:none;font-size:25px;cursor:pointer;color:var(--ink2);line-height:1}
+  .drawer .content{padding:24px 26px 40px;overflow-y:auto;font-size:14px;line-height:1.95;color:#3a444b}
+  .drawer h4{font-size:14px;letter-spacing:.08em;margin:20px 0 7px;color:var(--ink)}
+  .drawer h4:first-child{margin-top:0}
+  .drawer ul{padding-left:19px}
+  .drawer li{margin-bottom:5px}
+  .drawer .note{border-left:2px solid var(--gold);padding-left:13px;color:#6b6252;margin-top:10px}
+  .backdrop{position:fixed;inset:0;background:rgba(30,25,15,.4);z-index:65;opacity:0;visibility:hidden;transition:.35s}
+  .backdrop.show{opacity:1;visibility:visible}
+
+  @media (max-width:1180px){
+    .layout{flex-direction:column}
+    .panel{flex:0 0 auto;max-height:48vh;border-left:none;border-top:1px solid var(--line)}
+    .board{min-height:44vh}
+    .titles h1{font-size:22px}
+    .readout{gap:12px;font-size:11.5px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <span class="tag">探究操作式交互</span>
+    <div class="titles">
+      <h1>勾股定理探究实验室</h1>
+      <p>北师大版八年级上册　第一章　·　拖动、记录、猜想、验证</p>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnTeach">教学说明</button>
+  </header>
+
+  <main class="layout">
+    <section class="board">
+      <svg id="canvas" viewBox="-185 -185 570 570" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M10 0 L0 0 L0 10" fill="none" stroke="#e3dac6" stroke-width="1"/>
+          </pattern>
+          <pattern id="grid5" width="50" height="50" patternUnits="userSpaceOnUse">
+            <rect width="50" height="50" fill="url(#grid)"/>
+            <path d="M50 0 L0 0 L0 50" fill="none" stroke="#cfc3a9" stroke-width="1.2"/>
+          </pattern>
+        </defs>
+        <rect x="-2000" y="-2000" width="4000" height="4000" fill="url(#grid5)" opacity=".85"/>
+
+        <!-- 三个正方形 -->
+        <polygon id="sqA" fill="#2a6f8e" fill-opacity=".14" stroke="#2a6f8e" stroke-width="2"/>
+        <polygon id="sqB" fill="#3c7a55" fill-opacity=".14" stroke="#3c7a55" stroke-width="2"/>
+        <polygon id="sqC" fill="#a97f1f" fill-opacity=".16" stroke="#a97f1f" stroke-width="2"/>
+
+        <!-- 三角形 -->
+        <polygon id="tri" fill="#b34a1d" fill-opacity=".20" stroke="#b34a1d" stroke-width="2.6"/>
+
+        <!-- 直角标记 -->
+        <path id="rightAngle" fill="none" stroke="#b34a1d" stroke-width="1.6"/>
+
+        <!-- 边长标签 -->
+        <text id="labA" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#2a6f8e" text-anchor="middle">a</text>
+        <text id="labB" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#3c7a55" text-anchor="middle">b</text>
+        <text id="labC" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#b34a1d" text-anchor="middle">c</text>
+
+        <!-- 面积标签 -->
+        <text id="areaA" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#2a6f8e" fill-opacity=".75" text-anchor="middle">a²</text>
+        <text id="areaB" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#3c7a55" fill-opacity=".75" text-anchor="middle">b²</text>
+        <text id="areaC" font-size="25" font-family="Georgia,serif" font-style="italic" fill="#a97f1f" fill-opacity=".8" text-anchor="middle">c²</text>
+
+        <!-- 拖拽手柄 -->
+        <circle id="hA" r="12" fill="#fff" stroke="#2a6f8e" stroke-width="3" cursor="ew-resize"/>
+        <circle id="hB" r="12" fill="#fff" stroke="#3c7a55" stroke-width="3" cursor="ns-resize"/>
+        <circle cx="0" cy="0" r="5" fill="#1d242a"/>
+        <text x="-17" y="6" font-size="15" fill="#41505a" text-anchor="middle">O</text>
+      </svg>
+
+      <div class="readout">
+        <span>直角边 a<b id="roA">3</b></span>
+        <span>直角边 b<b id="roB">4</b></span>
+        <span>斜边 c<b id="roC">5.00</b></span>
+        <span class="eq">a² + b² = c²</span>
+      </div>
+      <div class="axis-tip">拖动蓝、绿两个圆点，或使用右侧滑块</div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-scroll">
+
+        <div class="sec">
+          <h2><span><span class="idx">01</span>　改变直角边</span><span style="font-size:11px;color:#a2937c">单位：格</span></h2>
+          <div class="slider-row">
+            <label>a</label>
+            <input type="range" id="rA" min="70" max="170" step="1" value="90">
+            <output id="oA">90</output>
+          </div>
+          <div class="slider-row">
+            <label>b</label>
+            <input type="range" id="rB" min="70" max="170" step="1" value="120">
+            <output id="oB">120</output>
+          </div>
+          <div class="values">
+            <div class="val a"><span>a²</span><b id="vA2">8100</b></div>
+            <div class="val b"><span>b²</span><b id="vB2">14400</b></div>
+            <div class="val c"><span>c²</span><b id="vC2">22500</b></div>
+            <div class="val"><span>c</span><b id="vC">150.00</b></div>
+            <div class="val sum"><span>a² + b²</span><b id="vSum">22500</b></div>
+          </div>
+        </div>
+
+        <div class="sec">
+          <h2><span><span class="idx">02</span>　记录数据</span>
+            <button class="btn mini" id="btnRecord">记录这一组</button></h2>
+          <table>
+            <thead><tr><th>组</th><th>a</th><th>b</th><th>c</th><th>a²+b²</th><th>c²</th></tr></thead>
+            <tbody id="tbody">
+              <tr><td colspan="6" class="empty">至少记录 3 组，再来找规律</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sec">
+          <h2><span><span class="idx">03</span>　提出猜想</span></h2>
+          <div class="hypo locked" id="hypo">
+            <p class="q">这几组数据里，三边之间始终成立的关系是：</p>
+            <div class="opts" id="hyOpts">
+              <button class="opt" data-i="0">a + b = c</button>
+              <button class="opt" data-i="1">a² + b² = c²</button>
+              <button class="opt" data-i="2">a² + b² 与 c² 没有固定关系</button>
+            </div>
+            <div class="fb" id="hyFb"></div>
+          </div>
+          <p class="lockmsg" id="lockmsg">先记录 3 组数据，锁定区才会解锁。</p>
+        </div>
+
+        <div class="sec proof" id="proof">
+          <h2><span><span class="idx">04</span>　用面积说明道理</span>
+            <button class="btn mini" id="btnStep">下一步</button></h2>
+          <svg viewBox="0 0 340 340" id="proofSvg"></svg>
+          <div class="steps" id="steps">
+            <div class="step"><b>以斜边 c 为边长</b>作一个大正方形，面积是 c²。</div>
+            <div class="step">大正方形里放四个全等的直角三角形，每个面积 <b>ab/2</b>，四个合起来 <b>2ab</b>。</div>
+            <div class="step">中间空出一个小正方形，边长是 <b>b − a</b>，面积 <b>(b − a)²</b>。</div>
+            <div class="step">两块面积相加：c² = 2ab + (b − a)² = <b>a² + b²</b>。</div>
+          </div>
+          <div class="formula" id="formula" style="opacity:.35">c² = 2ab + (b − a)² = <em>a² + b²</em></div>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer">
+  <header>
+    <h3>教学说明</h3>
+    <button class="close" id="btnClose">×</button>
+  </header>
+  <div class="content">
+    <h4>适用对象</h4>
+    <p>北师大版八年级上册第一章「勾股定理」第一课时，或人教版八年级下册第十七章。用于定理的<b>发现</b>环节，而不是证明之后的应用练习。</p>
+
+    <h4>教学目的</h4>
+    <ul>
+      <li><b>经历发现过程：</b>通过连续改变直角边，观察到 a²+b² 与 c² 始终相等，把「定理」还原成「一个可以被发现的规律」。</li>
+      <li><b>发展几何直观：</b>三个正方形的面积随边长同步变化，学生看到的是面积关系，而不只是三个数字。</li>
+      <li><b>学习探究方法：</b>操作 → 记录 → 比较 → 猜想 → 验证，完整走一遍数学探究的基本流程。</li>
+      <li><b>理解证明的必要：</b>几组数据只能支持猜想；用弦图做面积割补，才把「看起来成立」变成「一定成立」。</li>
+    </ul>
+
+    <h4>课堂用法（约 20 分钟）</h4>
+    <ul>
+      <li>先让学生只拖动、不记录，说说「你注意到什么」。</li>
+      <li>要求每人记录 3 组以上（含一组 a=b 的特殊情况），再投票选出猜想。</li>
+      <li>猜想确认后追问：「再多记 100 组，能不能算证明？」引出弦图。</li>
+      <li>用「下一步」逐步展开面积推导，每一步停一下让学生说理由。</li>
+    </ul>
+
+    <h4>设计说明</h4>
+    <p class="note">教科书上的勾股定理常常是「给出结论 + 给出证明」，学生缺少「为什么会有这个关系」的体验。这个页面把变量交给学生：a、b 一变，三个正方形的面积跟着变，而 a²+b² 与 c² 的差始终是 0——规律是被看见的，不是被告诉的。</p>
+    <p class="note">页面的数值由 a、b 精确计算，c = √(a²+b²)，所以 c² 恒等于 a²+b²（显示为整数）。拖动与滑块都可用，便于鼠标与触屏。</p>
+  </div>
+</aside>
+
+<script>
+(function(){
+  "use strict";
+  var MIN = 70, MAX = 170;
+  var a = 90, b = 120;
+  var records = [];
+  var solved = false;
+  var stepIdx = 0;
+
+  var svg = document.getElementById('canvas');
+  var sqA = document.getElementById('sqA');
+  var sqB = document.getElementById('sqB');
+  var sqC = document.getElementById('sqC');
+  var tri = document.getElementById('tri');
+  var rightAngle = document.getElementById('rightAngle');
+  var labA = document.getElementById('labA');
+  var labB = document.getElementById('labB');
+  var labC = document.getElementById('labC');
+  var areaA = document.getElementById('areaA');
+  var areaB = document.getElementById('areaB');
+  var areaC = document.getElementById('areaC');
+  var hA = document.getElementById('hA');
+  var hB = document.getElementById('hB');
+
+  function fmt(n){ return (Math.round(n*100)/100).toFixed(2); }
+
+  function draw(){
+    var c = Math.sqrt(a*a + b*b);
+
+    // 视口自适应：内容边界 x∈[-b, a+b], y∈[-a, a+b]，中心是 (a/2, b/2)
+    var pad = 44;
+    var cw = a + 2*b, ch = 2*a + b;
+    var L = Math.max(cw, ch) + pad*2;
+    svg.setAttribute('viewBox', (a/2 - L/2) + ' ' + (b/2 - L/2) + ' ' + L + ' ' + L);
+    var k = L / 630;
+
+    // 正方形
+    sqA.setAttribute('points', '0,0 ' + a + ',0 ' + a + ',' + (-a) + ' 0,' + (-a));
+    sqB.setAttribute('points', '0,0 0,' + b + ' ' + (-b) + ',' + b + ' ' + (-b) + ',0');
+    sqC.setAttribute('points',
+      a + ',0 0,' + b + ' ' + b + ',' + (b + a) + ' ' + (a + b) + ',' + a);
+
+    // 三角形
+    tri.setAttribute('points', '0,0 ' + a + ',0 0,' + b);
+
+    // 直角标记
+    var s = Math.min(18, Math.min(a,b) * 0.18);
+    rightAngle.setAttribute('d', 'M ' + s + ' 0 L ' + s + ' ' + s + ' L 0 ' + s);
+
+    // 边长标签：只标字母，数值看右侧面板
+    var nx = b / c, ny = a / c;
+    labA.setAttribute('x', a * 0.66); labA.setAttribute('y', 32*k);
+    labB.setAttribute('x', 31*k); labB.setAttribute('y', b * 0.66 + 9*k);
+    labC.setAttribute('x', a/2 + 28*k*nx); labC.setAttribute('y', b/2 + 28*k*ny);
+    labA.setAttribute('font-size', 26*k);
+    labA.textContent = 'a';
+    labB.setAttribute('font-size', 26*k);
+    labB.textContent = 'b';
+    labC.setAttribute('font-size', 26*k);
+    labC.textContent = 'c';
+
+    // 面积标签：字号按视口缩放系数收缩，避免溢出
+    var fsA = Math.max(15, Math.min(27, a*0.25)) * k;
+    var fsB = Math.max(15, Math.min(27, b*0.25)) * k;
+    var fsC = Math.max(15, Math.min(28, c*0.17)) * k;
+    areaA.setAttribute('font-size', fsA); areaA.setAttribute('x', a/2); areaA.setAttribute('y', -a/2 + fsA*0.35);
+    areaB.setAttribute('font-size', fsB); areaB.setAttribute('x', -b/2); areaB.setAttribute('y', b/2 + fsB*0.35);
+    areaC.setAttribute('font-size', fsC); areaC.setAttribute('x', (a+b)/2); areaC.setAttribute('y', (a+b)/2 + fsC*0.35);
+    areaA.textContent = 'a²';
+    areaB.textContent = 'b²';
+    areaC.textContent = 'c²';
+
+    // 手柄
+    hA.setAttribute('cx', a); hA.setAttribute('cy', 0);
+    hB.setAttribute('cx', 0);  hB.setAttribute('cy', b);
+
+    // 数值面板
+    document.getElementById('vA2').textContent = a*a;
+    document.getElementById('vB2').textContent = b*b;
+    document.getElementById('vC2').textContent = a*a + b*b;
+    document.getElementById('vC').textContent = fmt(c);
+    document.getElementById('vSum').textContent = a*a + b*b;
+    document.getElementById('roA').textContent = a;
+    document.getElementById('roB').textContent = b;
+    document.getElementById('roC').textContent = fmt(c);
+    document.getElementById('oA').textContent = a;
+    document.getElementById('oB').textContent = b;
+    document.getElementById('rA').value = a;
+    document.getElementById('rB').value = b;
+  }
+
+  // 滑块
+  document.getElementById('rA').addEventListener('input', function(e){ a = parseInt(e.target.value,10); draw(); });
+  document.getElementById('rB').addEventListener('input', function(e){ b = parseInt(e.target.value,10); draw(); });
+
+  // 拖拽
+  function toSvg(evt){
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  var dragging = null;
+  function startDrag(which){
+    return function(e){
+      e.preventDefault();
+      dragging = which;
+      svg.setPointerCapture && svg.setPointerCapture(e.pointerId);
+    };
+  }
+  hA.addEventListener('pointerdown', startDrag('a'));
+  hB.addEventListener('pointerdown', startDrag('b'));
+  svg.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    var p = toSvg(e);
+    if(dragging === 'a'){ a = Math.max(MIN, Math.min(MAX, Math.round(p.x))); }
+    else { b = Math.max(MIN, Math.min(MAX, Math.round(p.y))); }
+    draw();
+  });
+  svg.addEventListener('pointerup', function(){ dragging = null; });
+  svg.addEventListener('pointerleave', function(){ dragging = null; });
+
+  // 记录
+  var tbody = document.getElementById('tbody');
+  document.getElementById('btnRecord').addEventListener('click', function(){
+    var c = Math.sqrt(a*a + b*b);
+    records.push({ a:a, b:b, c:c, sum:a*a+b*b });
+    if(records.length > 6) records.shift();
+    renderTable();
+    checkUnlock();
+  });
+
+  function renderTable(){
+    if(!records.length){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">至少记录 3 组，再来找规律</td></tr>';
+      return;
+    }
+    tbody.innerHTML = records.map(function(r, i){
+      return '<tr class="' + (i === records.length-1 ? 'new' : '') + '">' +
+        '<td>' + (i+1) + '</td><td>' + r.a + '</td><td>' + r.b + '</td>' +
+        '<td class="mono">' + fmt(r.c) + '</td>' +
+        '<td class="mono">' + r.sum + '</td>' +
+        '<td class="mono">' + (r.a*r.a + r.b*r.b) + '</td></tr>';
+    }).join('');
+  }
+
+  function checkUnlock(){
+    if(records.length >= 3){
+      document.getElementById('hypo').classList.remove('locked');
+      document.getElementById('lockmsg').textContent = '数据够 3 组了。比较「a²+b²」和「c²」两列，选出你的猜想。';
+    }
+  }
+
+  // 猜想
+  var hyOpts = document.getElementById('hyOpts');
+  hyOpts.addEventListener('click', function(e){
+    var btn = e.target.closest('.opt');
+    if(!btn || btn.disabled) return;
+    var i = parseInt(btn.getAttribute('data-i'),10);
+    var fb = document.getElementById('hyFb');
+    var all = hyOpts.querySelectorAll('.opt');
+    if(i === 1){
+      btn.classList.add('right');
+      all.forEach(function(x){ x.disabled = true; });
+      fb.className = 'fb show';
+      fb.innerHTML = '<b>猜想成立。</b>你已经发现：无论直角边怎么变，a²+b² 总等于 c²。但六组数据不是证明——接下来用面积把它说明白。';
+      solved = true;
+      document.getElementById('proof').classList.add('show');
+      document.getElementById('proof').style.display = 'block';
+      buildProof();
+      document.getElementById('proof').scrollIntoView({behavior:'smooth', block:'nearest'});
+    } else {
+      btn.classList.add('wrong');
+      btn.disabled = true;
+      fb.className = 'fb show';
+      fb.innerHTML = i === 0
+        ? '把第一组数据代进去试试：a + b 与 c 相等吗？再看两列平方数。'
+        : '再观察一会儿：c² 那一列，和 a²+b² 那一列，差是多少？';
+    }
+  });
+
+  // 弦图证明
+  function buildProof(){
+    // 两条直角边过于接近时，中心小正方形退化成点，换一组 3:4 的比例绘制示意图
+    var pa = a, pb = b, note = '';
+    if(Math.abs(a - b) < 14){ pa = 3; pb = 4; note = '（两条边太接近，示意图按 3 : 4 绘制）'; }
+    var c = Math.sqrt(pa*pa + pb*pb);
+    var a0 = pa, b0 = pb;
+    var s = 300;
+    var k = s / c;
+    var P1 = { x: a0*a0/c, y: a0*b0/c };
+    var P2 = { x: c - a0*b0/c, y: a0*a0/c };
+    var P3 = { x: c - a0*a0/c, y: c - a0*b0/c };
+    var P4 = { x: a0*b0/c, y: c - a0*a0/c };
+    function T(p){ return (p.x*k) + ',' + (p.y*k); }
+    var corners = [{x:0,y:0},{x:c,y:0},{x:c,y:c},{x:0,y:c}];
+    var pts = [P1,P2,P3,P4];
+    var svgP = document.getElementById('proofSvg');
+    var html = '';
+    html += '<rect x="0" y="0" width="300" height="300" fill="#fdf9ee" stroke="#a97f1f" stroke-width="2"/>';
+    // 四个直角三角形
+    for(var i=0;i<4;i++){
+      var p = pts[i];
+      var q = pts[(i+1)%4];
+      var corner = corners[(i+1)%4];
+      // 三角形：两条外边上取 a、b
+      var ptri = triPoints(i, c, a0, b0);
+      html += '<polygon points="' + ptri.map(function(v){return (v.x*k)+','+(v.y*k);}).join(' ') + '" fill="#b34a1d" fill-opacity=".18" stroke="#b34a1d" stroke-width="1.4" class="ptri" data-i="' + i + '"/>';
+    }
+    // 中心小正方形
+    html += '<polygon points="' + [P1,P2,P3,P4].map(T).join(' ') + '" fill="#a97f1f" fill-opacity=".22" stroke="#a97f1f" stroke-width="2" class="pinner"/>';
+    // 标注
+    html += '<text x="150" y="24" font-size="14" fill="#7a6a48" text-anchor="middle">边长 c 的正方形　面积 c²</text>';
+    html += '<text x="150" y="288" font-size="13" fill="#7a6a48" text-anchor="middle">四个三角形 + 中间小正方形　' + note + '</text>';
+    svgP.innerHTML = html;
+  }
+
+  // 计算第 i 个三角形（斜边贴着外正方形第 i 条边）
+  function triPoints(i, c, a, b){
+    var base = [
+      [{x:0,y:0},{x:c,y:0},{x:a*a/c,y:a*b/c}],
+      [{x:c,y:0},{x:c,y:c},{x:c-a*b/c,y:a*a/c}],
+      [{x:c,y:c},{x:0,y:c},{x:c-a*a/c,y:c-a*b/c}],
+      [{x:0,y:c},{x:0,y:0},{x:a*b/c,y:c-a*a/c}]
+    ];
+    return base[i];
+  }
+
+  // 步骤
+  document.getElementById('btnStep').addEventListener('click', function(){
+    var steps = document.querySelectorAll('#steps .step');
+    if(stepIdx < steps.length){
+      steps[stepIdx].classList.add('on');
+      stepIdx++;
+      if(stepIdx === steps.length){
+        document.getElementById('btnStep').textContent = '重新演示';
+        document.getElementById('formula').style.opacity = '1';
+        document.querySelectorAll('.ptri').forEach(function(el){ el.setAttribute('fill-opacity','.30'); });
+        document.querySelector('.pinner').setAttribute('fill-opacity','.38');
+      }
+    } else {
+      steps.forEach(function(s){ s.classList.remove('on'); });
+      stepIdx = 0;
+      document.getElementById('btnStep').textContent = '下一步';
+      document.getElementById('formula').style.opacity = '.35';
+    }
+  });
+
+  // 教学说明
+  var drawer = document.getElementById('drawer');
+  var backdrop = document.getElementById('backdrop');
+  function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('show'); }
+  document.getElementById('btnTeach').addEventListener('click', function(){ drawer.classList.add('open'); backdrop.classList.add('show'); });
+  document.getElementById('btnClose').addEventListener('click', closeDrawer);
+  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDrawer(); });
+
+  draw();
+})();
+</script>
+</body>
+</html>
